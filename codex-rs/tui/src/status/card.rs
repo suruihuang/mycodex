@@ -23,6 +23,7 @@ use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
 use codex_protocol::models::PermissionProfile;
 use codex_protocol::openai_models::ReasoningEffort;
 use codex_utils_absolute_path::AbsolutePathBuf;
+use codex_utils_cli::PRODUCT_NAME;
 use codex_utils_sandbox_summary::summarize_permission_profile;
 use ratatui::prelude::*;
 use ratatui::style::Stylize;
@@ -731,7 +732,7 @@ impl HistoryCell for StatusHistoryCell {
         let mut lines: Vec<Line<'static>> = Vec::new();
         lines.push(Line::from(vec![
             Span::from(format!("{}>_ ", FieldFormatter::INDENT)).dim(),
-            Span::from("OpenAI Codex").bold(),
+            Span::from(PRODUCT_NAME).bold(),
             Span::from(" ").dim(),
             Span::from(format!("(v{CODEX_CLI_VERSION})")).dim(),
         ]));

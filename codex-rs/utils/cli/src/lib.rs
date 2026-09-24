@@ -5,6 +5,9 @@ mod resume_command;
 mod sandbox_mode_cli_arg;
 mod shared_options;
 
+/// User-facing product name shown in banners and status output.
+pub const PRODUCT_NAME: &str = "MyCodex";
+
 pub use approval_mode_cli_arg::ApprovalModeCliArg;
 pub use codex_protocol::config_types::ProfileV2Name;
 pub use config_override::CliConfigOverrides;

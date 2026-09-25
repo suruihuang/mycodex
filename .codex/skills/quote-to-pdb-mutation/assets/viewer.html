@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mutation structure viewer</title>
+<style>
+body{margin:0;background:#101923;color:#edf3f8;font:16px system-ui,sans-serif}main{display:grid;grid-template-columns:340px 1fr;min-height:100vh}aside{padding:28px;overflow-wrap:anywhere}h1{font-size:25px}p{line-height:1.55;color:#c1cfdb}#viewer{position:relative;height:100vh;background:#f5f8fb}button{background:#243c50;color:white;border:1px solid #5b7183;border-radius:7px;padding:10px;margin:4px 4px 4px 0;cursor:pointer}button:focus-visible{outline:3px solid #ffbf47}.site{display:block;width:100%;text-align:left}.mutation{border-left:5px solid #f59e0b}.partner{border-left:5px solid #14b8a6}small{line-height:1.6;color:#b8c8d6}#status{color:#ffcf85}@media(max-width:760px){main{display:block}#viewer{height:65vh}}
+</style>
+<main><aside><h1 id="title">Mutation structure viewer</h1>
+<p>Mutation sites on the deposited structure. Highlighting does not change its amino acids or predict a mutant conformation.</p>
+<p id="source"></p><div id="sites"></div>
+<button id="reset" disabled>Full structure</button><button id="focus" disabled>Focus sites</button><button id="labels" disabled>Hide labels</button><button id="png" disabled>Save image</button>
+<p><small>Orange: mutation sites · Teal: partner residues<br>Drag to rotate; scroll to zoom. Residue numbers use the structure’s author numbering.</small></p>
+<p id="citation"></p><p id="status" role="status">Loading viewer library… Internet access and WebGL are required.</p>
+</aside><div id="viewer" aria-label="Interactive protein structure"></div></main>
+<script id="data" type="application/json">__STRUCTURE_DATA__</script>
+<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.3/build/3Dmol-min.js" onerror="document.getElementById('status').textContent='Unable to load 3Dmol.js. Check your internet connection and reload.'"></script>
+<script>
+const data=JSON.parse(document.getElementById('data').textContent);
+document.getElementById('title').textContent=data.title;
+document.getElementById('citation').textContent=data.citation;
+document.getElementById('source').textContent=`${data.source} · Model ${data.model} · Chains: ${data.chains.map(c=>`${c.chain} (${c.residues})`).join(', ')}`;
+try {
+ if(!window.$3Dmol) throw new Error('Viewer library unavailable. Check your internet connection and reload.');
+ const viewer=$3Dmol.createViewer(document.getElementById('viewer'),{backgroundColor:'#f5f8fb'});
+ viewer.addModel(data.pdb,'pdb');
+ viewer.setStyle({},{cartoon:{colorscheme:'chain'}});
+ const selections=data.annotations.map(a=>a.selection);
+ const allSites=selections.length?{or:selections}:{};
+ let showLabels=true;
+ function labels(){viewer.removeAllLabels();if(showLabels) for(const a of data.annotations) viewer.addLabel(a.label,{position:a.position,backgroundColor:'#182b3a',fontColor:'white',fontSize:13});viewer.render();}
+ for(const a of data.annotations){
+  const atoms=viewer.selectedAtoms(a.selection);
+  if(!atoms.length) throw new Error(`Viewer could not map ${a.label}.`);
+  viewer.addStyle(a.selection,{stick:{color:a.role==='mutation'?'#f59e0b':'#14b8a6',radius:0.25}});
+  const button=document.createElement('button');button.className=`site ${a.role}`;
+  button.textContent=`${a.label} · observed ${a.observed}`;
+  button.onclick=()=>{viewer.zoomTo(a.selection);viewer.render();};
+  document.getElementById('sites').appendChild(button);
+ }
+ labels();viewer.zoomTo();viewer.render();
+ for(const id of ['reset','focus','labels','png'])document.getElementById(id).disabled=false;
+ document.getElementById('reset').onclick=()=>{viewer.zoomTo();viewer.render();};
+ document.getElementById('focus').onclick=()=>{viewer.zoomTo(allSites);viewer.render();};
+ document.getElementById('labels').onclick=()=>{showLabels=!showLabels;labels();document.getElementById('labels').textContent=showLabels?'Hide labels':'Show labels';};
+ document.getElementById('png').onclick=()=>{viewer.render();const link=document.createElement('a');link.href=viewer.pngURI();link.download='mutation-structure.png';link.click();};
+ window.addEventListener('resize',()=>{viewer.resize();viewer.render();});
+ document.getElementById('status').textContent='Structure loaded. Site identities checked against coordinates; protein identity and paper-number mapping require source verification.';
+}catch(error){document.getElementById('status').textContent=error.message;}
+</script>
+</html>

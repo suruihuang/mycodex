@@ -97,3 +97,8 @@ __pycache__/
 
 # Local progress reports
 /progress/
+/runs
+/experiment_results
+_report.*
+/eval
+/agent_trials

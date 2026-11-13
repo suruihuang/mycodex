@@ -1,0 +1,39 @@
+# Copy to config.toml and edit. config.toml is not committed: it points at private data.
+
+[paths]
+# Input table with ID, PDB, Mutation DECODED, Quote, Citation
+input_csv = "/path/to/CLEANED_id_quote_mutation_pdb.csv"
+# Curator workbook; its CLEANED sheet column D holds the mechanism tags. The prompts tell the LLM not to open its folder.
+curator_workbook = "/path/to/Cleaned quotes +Results.xlsx"
+# Folder with dev_ids.txt, test_ids.txt, reserve_ids.txt
+testset_dir = "/path/to/testset"
+# Paper-to-PDB residue offsets, given to the LLM and used to find residues in PDFs
+numbering_map = "/path/to/numbering_map.csv"
+# Folders searched recursively for cached mmCIF files
+structure_dirs = ["/path/to/cif_cache"]
+# SKEMPI 2.0 table (semicolon-separated, from https://life.bsc.es/pid/skempi2)
+skempi_csv = "/path/to/skempi_v2.csv"
+# Where runs and analyses are written
+runs_dir = "runs"
+# Folders the LLM is told not to open (earlier runs, curator data)
+forbidden_dirs = ["/path/to/old/runs", "/path/to/curator/data"]
+# Older run folders that the reproduction check reads
+dev_llm_run = "/path/to/pipeline/runs/dev_routing_bcd"
+# Rules v3 and v4 skill folders, only needed for `mutmech pipeline run --methods v3,v4`; v4 ships in skills/v4
+skills_v3 = "/path/to/skills_v3"
+skills_v4 = "skills/v4"
+
+[engine]
+# Codex binary used for every LLM call
+codex = "/path/to/codex"
+# Model passed with -m; empty means the Codex default (the model actually used is recorded either way)
+model = ""
+
+[first500]
+# First-500 benchmark: answers and inputs, and the finished runs `mutmech score` and `mutmech reproduce` read.
+# Optional; without them `score` needs --answers, --inputs and --baseline-run, and `reproduce` skips these checks.
+answers = "/path/to/first500_answers.json"
+inputs = "/path/to/first500_mechanism_inputs.json"
+baseline_run = "/path/to/pipeline/runs/first500_baseline"
+v4norev_run = "/path/to/pipeline/runs/first500_v4_extract"
+stmt_run = "/path/to/pipeline/runs/first500_stmt"

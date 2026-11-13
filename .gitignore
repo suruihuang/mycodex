@@ -102,3 +102,5 @@ __pycache__/
 _report.*
 /eval
 /agent_trials
+# Windows download markers
+*:Zone.Identifier

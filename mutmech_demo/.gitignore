@@ -1,0 +1,7 @@
+.venv/
+config.toml
+runs/
+__pycache__/
+*.pyc
+*.pdf
+*:Zone.Identifier

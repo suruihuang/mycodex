@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MutMech Bench</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="bar">
+  <div class="bar-inner">
+    <div class="brand"><span class="brand-name">MutMech</span><span class="brand-sub">mechanism bench · local</span></div>
+    <nav class="tabs" aria-label="Views">
+      <a href="#analyze" data-view="analyze">Analyze</a>
+      <a href="#paper" data-view="paper">Paper</a>
+      <a href="#result" data-view="result">Result</a>
+      <a href="#batch" data-view="batch">Batch</a>
+      <a href="#history" data-view="history">History</a>
+    </nav>
+  </div>
+</header>
+<p class="notice"><span class="notice-inner">Every LLM call sends the quote or the PDF passages to the model behind Codex. This server answers on 127.0.0.1 only; dry runs and keyword-routed quotes make no LLM call.</span></p>
+
+<main>
+  <section id="view-analyze" class="view" aria-labelledby="h-analyze">
+    <h1 id="h-analyze" class="view-title">Analyze one mutation</h1>
+    <div class="analyze-grid">
+      <form id="analyze-form" class="panel form" novalidate>
+        <div class="row2">
+          <label class="field"><span>Mutation <em>PDB numbering</em></span><input id="f-mutation" name="mutation" required placeholder="D364A (chain B)" autocomplete="off"></label>
+          <label class="field"><span>PDB entry</span><input id="f-pdb" name="pdb" placeholder="1A22" autocomplete="off"></label>
+        </div>
+        <div class="row2">
+          <label class="field"><span>Citation <em>optional</em></span><input id="f-citation" name="citation" autocomplete="off"></label>
+          <label class="field"><span>Paper number <em>optional</em></span><input id="f-paper" name="paper_number" inputmode="numeric" placeholder="164" autocomplete="off"></label>
+        </div>
+        <fieldset class="field source">
+          <legend>Evidence</legend>
+          <div class="seg" role="radiogroup">
+            <label><input type="radio" name="source" value="quote" id="f-src-quote" checked> Quote text</label>
+            <label><input type="radio" name="source" value="pdf" id="f-src-pdf"> PDF upload</label>
+          </div>
+          <textarea id="f-quote" name="quote" rows="6" placeholder="Paste the passage that discusses the mutation."></textarea>
+          <input id="f-pdf" type="file" accept="application/pdf,.pdf" hidden>
+          <p class="hint" id="pdf-hint" hidden>The passages that name the residue are found in the PDF's text layer. Scanned PDFs need OCR first.</p>
+        </fieldset>
+        <fieldset class="field">
+          <legend>Rule</legend>
+          <div id="rule-list" class="rules"></div>
+        </fieldset>
+        <label class="check"><input type="checkbox" id="f-dry"> Dry run: write the prompt, make no LLM call</label>
+        <div class="actions">
+          <button type="submit" class="primary" id="f-submit">Analyze</button>
+          <p class="form-error" id="form-error" role="alert"></p>
+        </div>
+      </form>
+      <aside class="panel job" aria-live="polite">
+        <h2>Job</h2>
+        <div id="job-box" class="job-empty">No job yet. Submitted analyses run one at a time, so Codex calls never overlap.</div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="view-paper" class="view" hidden aria-labelledby="h-paper">
+    <h1 id="h-paper" class="view-title">Find mutations in a paper</h1>
+    <form id="paper-form" class="panel form batch-form" novalidate>
+      <div class="row2">
+        <label class="field"><span>Paper PDF</span><input id="p-file" type="file" accept="application/pdf,.pdf"></label>
+        <label class="field"><span>PDB entry <em>optional, proposed from the paper when empty</em></span><input id="p-pdb" placeholder="from the paper" autocomplete="off"></label>
+      </div>
+      <p class="hint">Reads the PDF's text layer for forms such as R64A, Arg64Ala, Arg-64-Ala, "Arg64 to alanine" and single alanine substitutions. The PDB entry is proposed from IDs in the text, the dataset's own citation table and file naming, and the local structure cache, then ranked by how many wild types match. No LLM call, no network. Scanned PDFs need OCR first.</p>
+      <div class="actions">
+        <button type="submit" class="primary" id="p-find">Find mutations</button>
+        <p class="form-error" id="paper-error" role="alert"></p>
+      </div>
+    </form>
+    <div id="paper-status" class="batch-status" aria-live="polite"></div>
+    <div id="paper-pdb" class="panel pdb-box" hidden></div>
+    <div id="paper-picks" hidden>
+      <div class="table-wrap"><table id="paper-table" class="data">
+        <thead><tr><th><input type="checkbox" id="p-all" aria-label="Select all"></th><th>As written</th><th>PDB mutation</th><th>Chain</th><th>Structure check</th><th>Count</th><th>Pages</th><th>Context</th><th>Result</th><th><span class="sr">Structure</span></th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <form id="paper-run" class="panel form picks-bar" novalidate>
+        <label class="field"><span>Rule</span><select id="p-rule"></select></label>
+        <label class="check"><input type="checkbox" id="p-dry"> Dry run</label>
+        <div class="actions">
+          <button type="submit" class="primary" id="p-analyze">Analyze selected</button>
+          <span class="muted" id="p-count">0 selected</span>
+          <p class="form-error" id="paper-run-error" role="alert"></p>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section id="view-result" class="view" hidden aria-labelledby="h-result">
+    <div id="result-empty" class="panel empty"><h1 id="h-result" class="view-title">Result</h1><p>Run an analysis or open one from History.</p></div>
+    <article id="result" hidden></article>
+  </section>
+
+  <section id="view-batch" class="view" hidden aria-labelledby="h-batch">
+    <h1 id="h-batch" class="view-title">Batch</h1>
+    <form id="batch-form" class="panel form batch-form" novalidate>
+      <label class="field"><span>Batch CSV</span><input id="b-file" type="file" accept=".csv,text/csv"></label>
+      <p class="hint">Columns: <code>mutation</code>, <code>pdb</code>, and <code>quote</code> or <code>pdf</code> (a path on this machine), optionally <code>citation</code> and <code>paper_number</code>. Rows run one after another.</p>
+      <div class="row2">
+        <label class="field"><span>Rule</span><select id="b-rule"></select></label>
+        <label class="check"><input type="checkbox" id="b-dry"> Dry run</label>
+      </div>
+      <div class="actions">
+        <button type="submit" class="primary">Run batch</button>
+        <p class="form-error" id="batch-error" role="alert"></p>
+      </div>
+    </form>
+    <div id="batch-status" class="batch-status" aria-live="polite"></div>
+    <div class="table-wrap"><table id="batch-table" class="data" hidden>
+      <thead><tr><th>Row</th><th>Mutation</th><th>PDB</th><th>Source</th><th>Status</th><th>Route</th><th>Record class</th><th>Labels</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <section id="view-history" class="view" hidden aria-labelledby="h-history">
+    <div class="title-row"><h1 id="h-history" class="view-title">History</h1><button type="button" id="h-refresh">Refresh</button></div>
+    <div class="table-wrap"><table id="history-table" class="data clickable">
+      <thead><tr><th>Time</th><th>PDB</th><th>Mutation</th><th>Rule</th><th>Primary</th><th>Status</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>
